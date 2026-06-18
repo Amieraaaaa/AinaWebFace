@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SkinSight — Scan History</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      min-height: 100vh;
+      background: linear-gradient(135deg, #f3e8ff 0%, #ede9fe 50%, #ddd6fe 100%);
+      padding: 32px 16px 48px;
+    }
+
+    /* ── Top bar ── */
+    .topbar {
+      max-width: 900px;
+      margin: 0 auto 28px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+
+    .logo {
+      display: flex; align-items: center; gap: 8px; text-decoration: none;
+    }
+    .logo-icon {
+      width: 34px; height: 34px;
+      background: linear-gradient(135deg, #7c3aed, #a855f7);
+      border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+      color: #fff; font-size: 16px;
+    }
+    .logo-text { font-size: 18px; font-weight: 700; color: #1e1b4b; }
+
+    .topbar-right { display: flex; align-items: center; gap: 10px; }
+
+    .btn-ghost {
+      font-size: 14px; font-weight: 600; color: #7c3aed;
+      text-decoration: none; padding: 7px 16px;
+      border: 1.5px solid #c4b5fd; border-radius: 8px;
+      background: #fff; cursor: pointer;
+      transition: background 0.2s;
+    }
+    .btn-ghost:hover { background: #faf5ff; }
+
+    .btn-danger {
+      font-size: 14px; font-weight: 600; color: #dc2626;
+      padding: 7px 16px;
+      border: 1.5px solid #fca5a5; border-radius: 8px;
+      background: #fff; cursor: pointer;
+      transition: background 0.2s;
+    }
+    .btn-danger:hover { background: #fef2f2; }
+
+    /* ── Page heading ── */
+    .page-heading {
+      max-width: 900px; margin: 0 auto 22px;
+    }
+    .page-heading h1 { font-size: 26px; font-weight: 800; color: #1e1b4b; }
+    .page-heading p  { font-size: 14px; color: #6b7280; margin-top: 4px; }
+
+    /* ── Controls bar ── */
+    .controls {
+      max-width: 900px; margin: 0 auto 24px;
+      display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+    }
+
+    .filter-label { font-size: 14px; font-weight: 600; color: #374151; }
+
+    select {
+      padding: 8px 36px 8px 12px;
+      border: 1.5px solid #c4b5fd;
+      border-radius: 8px;
+      font-size: 14px; font-weight: 500; color: #1e1b4b;
+      background: #fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%237c3aed' stroke-width='1.8' fill='none' stroke-linecap='round'/%3E%3C/svg%3E") no-repeat right 12px center;
+      -webkit-appearance: none;
+      cursor: pointer;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+    select:focus { border-color: #7c3aed; box-shadow: 0 0 0 3px rgba(124,58,237,.12); }
+
+    #count-label { font-size: 13px; color: #9ca3af; margin-left: auto; }
+
+    /* ── Grid ── */
+    .grid {
+      max-width: 900px; margin: 0 auto;
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+      gap: 18px;
+    }
+
+    /* ── Card ── */
+    .scan-card {
+      background: #fff;
+      border-radius: 14px;
+      overflow: hidden;
+      box-shadow: 0 4px 16px rgba(109,40,217,0.09);
+      transition: transform 0.2s, box-shadow 0.2s;
+      display: flex; flex-direction: column;
+    }
+    .scan-card:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 8px 28px rgba(109,40,217,0.15);
+    }
+
+    .card-thumb {
+      width: 100%; aspect-ratio: 4/3;
+      object-fit: cover; display: block;
+      background: #f3f4f6;
+    }
+
+    .card-body { padding: 16px 18px 18px; flex: 1; }
+
+    .card-date {
+      font-size: 11px; font-weight: 500; color: #9ca3af;
+      text-transform: uppercase; letter-spacing: .04em;
+      margin-bottom: 6px;
+    }
+
+    .card-condition {
+      font-size: 16px; font-weight: 700; color: #1e1b4b; margin-bottom: 10px;
+    }
+
+    .card-footer {
+      display: flex; align-items: center; justify-content: space-between;
+    }
+
+    .badge {
+      display: inline-block; border-radius: 20px;
+      padding: 3px 11px; font-size: 12px; font-weight: 600;
+    }
+    .badge-mild     { background: #f0fdf4; color: #16a34a; }
+    .badge-moderate { background: #fefce8; color: #854d0e; }
+    .badge-severe   { background: #fef2f2; color: #dc2626; }
+
+    .confidence {
+      font-size: 12px; color: #9ca3af; font-weight: 500;
+    }
+
+    /* Health mini-bar */
+    .health-bar-wrap {
+      margin-top: 10px;
+      display: flex; align-items: center; gap: 8px;
+    }
+    .health-bar-label { font-size: 11px; color: #9ca3af; width: 72px; flex-shrink: 0; }
+    .health-bar-track {
+      flex: 1; height: 6px; background: #e9d5ff; border-radius: 99px; overflow: hidden;
+    }
+    .health-bar-fill  { height: 100%; border-radius: 99px; background: linear-gradient(90deg,#7c3aed,#a855f7); }
+    .health-bar-pct   { font-size: 11px; font-weight: 600; color: #7c3aed; width: 30px; text-align: right; }
+
+    /* ── Empty state ── */
+    #empty-state {
+      display: none;
+      max-width: 420px; margin: 60px auto; text-align: center;
+    }
+
+    .empty-illustration {
+      font-size: 72px; margin-bottom: 20px; line-height: 1;
+      filter: grayscale(0.2);
+    }
+
+    .empty-title {
+      font-size: 20px; font-weight: 700; color: #1e1b4b; margin-bottom: 8px;
+    }
+
+    .empty-sub {
+      font-size: 14px; color: #6b7280; margin-bottom: 28px; line-height: 1.6;
+    }
+
+    .btn-primary {
+      display: inline-block; padding: 12px 28px;
+      background: linear-gradient(135deg, #7c3aed, #a855f7);
+      color: #fff; border: none; border-radius: 10px;
+      font-size: 15px; font-weight: 600; cursor: pointer;
+      text-decoration: none; transition: opacity 0.2s;
+    }
+    .btn-primary:hover { opacity: 0.9; }
+
+    /* ── No-match state (filter shows 0) ── */
+    #no-match {
+      display: none;
+      max-width: 900px; margin: 0 auto;
+      text-align: center; padding: 48px 0;
+      font-size: 15px; color: #9ca3af;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Top bar -->
+  <div class="topbar">
+    <a class="logo" href="/">
+      <div class="logo-icon">✦</div>
+      <span class="logo-text">SkinSight</span>
+    </a>
+    <div class="topbar-right">
+      <a class="btn-ghost" href="results.html">New Scan</a>
+      <button class="btn-danger" id="clear-btn">Clear History</button>
+    </div>
+  </div>
+
+  <!-- Heading -->
+  <div class="page-heading">
+    <h1>Scan History</h1>
+    <p>All your previous skin analyses, newest first.</p>
+  </div>
+
+  <!-- Controls -->
+  <div class="controls">
+    <span class="filter-label">Filter by severity:</span>
+    <select id="severity-filter">
+      <option value="All">All severities</option>
+      <option value="Mild">Mild</option>
+      <option value="Moderate">Moderate</option>
+      <option value="Severe">Severe</option>
+    </select>
+    <span id="count-label"></span>
+  </div>
+
+  <!-- Card grid -->
+  <div class="grid" id="grid"></div>
+
+  <!-- No filter match -->
+  <div id="no-match">No scans match this filter.</div>
+
+  <!-- Empty state -->
+  <div id="empty-state">
+    <div class="empty-illustration">🔍</div>
+    <div class="empty-title">No scans yet</div>
+    <div class="empty-sub">
+      Start your first scan to see your skin health<br>analysis and personalised recommendations.
+    </div>
+    <a class="btn-primary" href="results.html">Start your first scan</a>
+  </div>
+
+  <script>
+    const STORAGE_KEY = "scanHistory";
+
+    function badgeClass(severity) {
+      return { Mild: "badge-mild", Moderate: "badge-moderate", Severe: "badge-severe" }[severity]
+             || "badge-mild";
+    }
+
+    function formatDate(isoString) {
+      return new Date(isoString).toLocaleDateString("en-MY", {
+        day: "numeric", month: "short", year: "numeric",
+        hour: "2-digit", minute: "2-digit",
+      });
+    }
+
+    function buildCard(entry) {
+      const card = document.createElement("div");
+      card.className = "scan-card";
+      card.dataset.severity = entry.severity;
+
+      const healthScore = entry.healthScore ?? 0;
+
+      card.innerHTML = `
+        <img class="card-thumb"
+             src="${entry.imageBase64 || 'data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22/>'}"
+             alt="Scan thumbnail"
+             onerror="this.style.display='none'" />
+        <div class="card-body">
+          <div class="card-date">${formatDate(entry.date)}</div>
+          <div class="card-condition">${entry.condition}</div>
+          <div class="card-footer">
+            <span class="badge ${badgeClass(entry.severity)}">${entry.severity}</span>
+            <span class="confidence">${entry.confidence}% confidence</span>
+          </div>
+          <div class="health-bar-wrap">
+            <span class="health-bar-label">Skin health</span>
+            <div class="health-bar-track">
+              <div class="health-bar-fill" style="width:${healthScore}%"></div>
+            </div>
+            <span class="health-bar-pct">${healthScore}</span>
+          </div>
+        </div>`;
+
+      return card;
+    }
+
+    // ── Render ────────────────────────────────────────────────────────────
+    function render() {
+      const history  = JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]");
+      const filter   = document.getElementById("severity-filter").value;
+      const grid     = document.getElementById("grid");
+      const empty    = document.getElementById("empty-state");
+      const noMatch  = document.getElementById("no-match");
+      const countLbl = document.getElementById("count-label");
+
+      grid.innerHTML = "";
+      noMatch.style.display  = "none";
+      empty.style.display    = "none";
+
+      if (history.length === 0) {
+        empty.style.display = "block";
+        countLbl.textContent = "";
+        return;
+      }
+
+      const filtered = filter === "All"
+        ? history
+        : history.filter((e) => e.severity === filter);
+
+      countLbl.textContent = `${filtered.length} of ${history.length} scan${history.length !== 1 ? "s" : ""}`;
+
+      if (filtered.length === 0) {
+        noMatch.style.display = "block";
+        return;
+      }
+
+      filtered.forEach((entry) => grid.appendChild(buildCard(entry)));
+    }
+
+    // ── Filter change ─────────────────────────────────────────────────────
+    document.getElementById("severity-filter").addEventListener("change", render);
+
+    // ── Clear history ─────────────────────────────────────────────────────
+    document.getElementById("clear-btn").addEventListener("click", () => {
+      const history = JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]");
+
+      if (history.length === 0) {
+        alert("Your scan history is already empty.");
+        return;
+      }
+
+      const confirmed = confirm(
+        `Delete all ${history.length} scan${history.length !== 1 ? "s" : ""} from history?\n\nThis cannot be undone.`
+      );
+
+      if (confirmed) {
+        localStorage.removeItem(STORAGE_KEY);
+        document.getElementById("severity-filter").value = "All";
+        render();
+      }
+    });
+
+    // ── Initial render ────────────────────────────────────────────────────
+    render();
+  </script>
+</body>
+</html>
