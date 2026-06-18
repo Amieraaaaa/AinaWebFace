@@ -26,6 +26,8 @@ npm-debug.log*
 # Next.js
 frontend/.next/
 .next/
+frontend/.env.local
+frontend/tsconfig.tsbuildinfo
 
 # IDE
 .vscode/
